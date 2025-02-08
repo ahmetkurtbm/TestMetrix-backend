@@ -14,12 +14,7 @@ const JWT_SECRET = "abcdefghjklmnprs";
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
-app.use(
-  cors({
-    origin: "http://localhost:3000", // Frontend adresi
-    credentials: true, // Cookie gönderimine izin ver
-  })
-);
+app.use(cors());
 
 // Veritabanı bağlantısı
 const pool = mysql.createPool({
@@ -54,7 +49,7 @@ const pool = mysql.createPool({
       CREATE TABLE IF NOT EXISTS excel_files (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
-        folder_name VARCHAR(100) NOT NULL,
+        folder_id INT NOT NULL,
         file_name VARCHAR(100) NOT NULL,
         file_data JSON NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -254,10 +249,8 @@ app.delete("/user", async (req, res) => {
   }
 });
 
-// Excel dosya yükleme işlemleri
-const upload = multer({ dest: "uploads/" });
-
-app.post("/excel-upload", upload.single("file"), async (req, res) => {
+// Excel işlemleri
+app.post("/excel-upload", async (req, res) => {
   const token = req.cookies.token;
 
   if (!token) {
@@ -269,11 +262,11 @@ app.post("/excel-upload", upload.single("file"), async (req, res) => {
 
     const userId = decoded.id;
 
-    const { folderName, fileName, arrayData } = req.body;
+    const { folderId, fileName, arrayData } = req.body;
 
     const [result] = await pool.execute(
-      "INSERT INTO excel_files (user_id, folder_name, file_name, file_data) VALUES (?, ?, ?, ?)",
-      [userId, folderName, fileName, arrayData]
+      "INSERT INTO excel_files (user_id, folder_id, file_name, file_data) VALUES (?, ?, ?, ?)",
+      [userId, folderId, fileName, arrayData]
     );
 
     res.status(201).json({ id: result.insertId, arrayData });
@@ -283,37 +276,12 @@ app.post("/excel-upload", upload.single("file"), async (req, res) => {
   }
 });
 
-app.get("/folders", async (req, res) => {
-  const token = req.cookies.token;
-
-  if (!token) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.id;
-
-    const [rows] = await pool.execute(
-      "SELECT id, folder_name, file_name, file_data, created_at FROM excel_files WHERE user_id = ?",
-      [userId]
-    );
-
-    res.status(200).json(rows);
-  } catch (error) {
-    console.error("Error fetching folders:", error.message);
-    res
-      .status(500)
-      .json({ error: "An error occurred during fetching folders" });
-  }
-});
-
 app.post("/excel", async (req, res) => {
-  const { fileId } = req.body;
-
   try {
+    const { fileId } = req.body;
+
     const [excel] = await pool.execute(
-      "SELECT id, folder_name, file_name, file_data, created_at FROM excel_files WHERE id = ?",
+      "SELECT id, folder_id, file_name, created_at, file_data FROM excel_files WHERE id = ?",
       [fileId]
     );
 
@@ -326,14 +294,50 @@ app.post("/excel", async (req, res) => {
   }
 });
 
-app.post("/excel-update", async (req, res) => {
-  const { id, folderName, fileName, arrayData } = req.body;
+app.get("/excels", async (req, res) => {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const [excels] = await pool.execute(
+      "SELECT id, folder_id, file_name , created_at FROM excel_files WHERE user_id = ?",
+      [decoded.id]
+    );
+
+    res.status(200).json(excels);
+  } catch (error) {
+    console.error("Error fetching Excel file:", error.message);
+    res
+      .status(500)
+      .json({ error: "An error occurred during fetching Excel file" });
+  }
+});
+
+app.delete("/excel-delete", async (req, res) => {
+  const { fileId } = req.body;
+  try {
+    await pool.execute("DELETE FROM excel_files WHERE id = ?", [fileId]);
+    res.status(200).json({ message: "Excel file deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting Excel file:", error.message);
+    res.status(500).json({ error: "An error occurred during file deletion" });
+  }
+});
+
+app.put("/excel-update", async (req, res) => {
+  const { id, folder_id, file_name, file_data } = req.body;
+
+  console.log(id, folder_id, file_name);
 
   try {
     // Veritabanında güncelleme sorgusu
     const [result] = await pool.execute(
-      "UPDATE excel_files SET folder_name = ?, file_name = ?, file_data = ? WHERE id = ?;",
-      [folderName, fileName, JSON.stringify(arrayData), id]
+      "UPDATE excel_files SET folder_id = ?, file_name = ?, file_data = ? WHERE id = ?;",
+      [folder_id, file_name, JSON.stringify(file_data), id]
     );
 
     // Etkilenen satır sayısını kontrol edin
@@ -352,8 +356,6 @@ app.post("/excel-update", async (req, res) => {
 
 app.post("/excel-update-folder-name", async (req, res) => {
   const { id, folderName } = req.body;
-
-  console.log(typeof id, typeof folderName);
 
   try {
     // Veritabanında güncelleme sorgusu
@@ -376,86 +378,79 @@ app.post("/excel-update-folder-name", async (req, res) => {
   }
 });
 
-app.delete("/excel-delete", async (req, res) => {
-  const { fileId } = req.body;
+//Klasör işlemleri
+app.post("/upload-folder", async (req, res) => {
   try {
-    await pool.execute("DELETE FROM excel_files WHERE id = ?", [fileId]);
-    res.status(200).json({ message: "Excel file deleted successfully" });
+    const { folderName } = req.body;
+    if (!folderName)
+      return res.status(400).json({ message: "Folder name is required" });
+    const [result] = await pool.execute(
+      "INSERT INTO folders (folder_name) VALUES (?)",
+      [folderName]
+    );
+    res.status(201).json({ id: result.insertId, folderName });
   } catch (error) {
-    console.error("Error deleting Excel file:", error.message);
-    res.status(500).json({ error: "An error occurred during file deletion" });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Klasör işlemleri
-// app.post("/folders", async (req, res) => {
+// app.post("/folder", async (req, res) => {
 //   try {
-//     const { folder_name } = req.body;
-//     if (!folder_name)
+//     const { id } = req.body;
+//     if (!id)
 //       return res.status(400).json({ message: "Folder name is required" });
-//     const [result] = await connection.query(
-//       "INSERT INTO folders (folder_name) VALUES (?)",
-//       [folder_name]
+//     const [folderName] = await pool.execute(
+//       "SELECT folder_name FROM folders WHERE id=?",
+//       [id]
 //     );
-//     res.status(201).json({ id: result.insertId, folder_name });
+//     res.status(201).json({ folderName });
 //   } catch (error) {
 //     res.status(500).json({ error: error.message });
 //   }
 // });
 
-// app.get("/folders", async (req, res) => {
-//   try {
-//     const [rows] = await connection.query("SELECT * FROM folders");
-//     res.json(rows);
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
+app.get("/folders", async (req, res) => {
+  try {
+    const [rows] = await pool.execute("SELECT * FROM folders");
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
-// app.get("/folders/:id", async (req, res) => {
-//   try {
-//     const [rows] = await connection.query(
-//       "SELECT * FROM folders WHERE id = ?",
-//       [req.params.id]
-//     );
-//     if (rows.length === 0)
-//       return res.status(404).json({ message: "Folder not found" });
-//     res.json(rows[0]);
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
+app.put("/update-folder", async (req, res) => {
+  try {
+    const { id, folder_id, file_name, file_data } = req.body;
+    if (!id)
+      return res.status(400).json({ message: "Folder name is required" });
+    const [result] = await pool.execute(
+      "UPDATE folders SET folder_id = ?, file_name =?, file_data =? , WHERE id = ?",
+      [folder_id, file_name, file_data, id]
+    );
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Folder not found" });
+    res.json({ message: "Folder updated successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
-// app.put("/folders/:id", async (req, res) => {
-//   try {
-//     const { folder_name } = req.body;
-//     if (!folder_name)
-//       return res.status(400).json({ message: "Folder name is required" });
-//     const [result] = await connection.query(
-//       "UPDATE folders SET folder_name = ? WHERE id = ?",
-//       [folder_name, req.params.id]
-//     );
-//     if (result.affectedRows === 0)
-//       return res.status(404).json({ message: "Folder not found" });
-//     res.json({ message: "Folder updated successfully" });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
+app.delete("/delete-folder", async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id)
+      return res.status(400).json({ message: "Folder name is required" });
 
-// app.delete("/folders/:id", async (req, res) => {
-//   try {
-//     const [result] = await connection.query(
-//       "DELETE FROM folders WHERE id = ?",
-//       [req.params.id]
-//     );
-//     if (result.affectedRows === 0)
-//       return res.status(404).json({ message: "Folder not found" });
-//     res.json({ message: "Folder deleted successfully" });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
+    const [result] = await pool.execute("DELETE FROM folders WHERE id = ?", [
+      id,
+    ]);
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Folder not found" });
+    res.json({ message: "Folder deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Server başlatma
 app.listen(port, () => {
