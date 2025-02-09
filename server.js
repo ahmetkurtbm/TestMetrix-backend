@@ -1,5 +1,4 @@
 const express = require("express");
-const mysql = require("mysql2/promise");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
