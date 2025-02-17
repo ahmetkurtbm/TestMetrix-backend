@@ -237,7 +237,7 @@ app.post("/excel", async (req, res) => {
 
 // Get All Excel Files
 app.get("/excels", async (req, res) => {
-  // const token = req.cookies.token;
+  const token = req.cookies.token;
   // if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   console.log("ben geldim excelse");
