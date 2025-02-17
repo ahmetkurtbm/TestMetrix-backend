@@ -119,8 +119,8 @@ app.post("/login", async (req, res) => {
     // Yeni cookie'yi ekle
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Sadece prod ortamında HTTPS zorunlu olsun
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      secure: true, // Sadece prod ortamında HTTPS zorunlu olsun
+      sameSite: "None",
     });
 
     res.json({ message: "Login successful" });
@@ -133,8 +133,8 @@ app.post("/login", async (req, res) => {
 app.post("/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+    secure: true,
+    sameSite: "None",
   });
 
   res.cookie("token", "", { expires: new Date(0) }); // Boş çerez set et
