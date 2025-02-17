@@ -108,7 +108,7 @@ app.post("/login", async (req, res) => {
 // Get User
 app.get("/user", async (req, res) => {
   const token = req.cookies.token;
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
+  // if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -126,7 +126,7 @@ app.get("/user", async (req, res) => {
 // Update User
 app.put("/user", async (req, res) => {
   const token = req.cookies.token;
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
+  // if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -163,7 +163,7 @@ app.delete("/user", async (req, res) => {
   const token = req.cookies.token;
   const { password } = req.body;
 
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
+  // if (!token) return res.status(401).json({ error: "Unauthorized" });
   if (!password) return res.status(400).json({ error: "Password is required" });
 
   try {
@@ -199,7 +199,7 @@ app.delete("/user", async (req, res) => {
 // Upload Excel
 app.post("/excel-upload", async (req, res) => {
   const token = req.cookies.token;
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
+  // if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -237,8 +237,8 @@ app.post("/excel", async (req, res) => {
 
 // Get All Excel Files
 app.get("/excels", async (req, res) => {
-  const token = req.cookies.token;
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
+  // const token = req.cookies.token;
+  // if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -294,7 +294,7 @@ app.put("/excel-update", async (req, res) => {
 // Folder işlemleri
 app.post("/upload-folder", async (req, res) => {
   const token = req.cookies.token;
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
+  // if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
