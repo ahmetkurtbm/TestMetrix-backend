@@ -129,8 +129,6 @@ app.get("/user", async (req, res) => {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
-  console.log(token);
-
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.userId).select(
@@ -263,16 +261,11 @@ app.get("/excels", async (req, res) => {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
-  console.log("ben geldim excelse");
-  console.log(token);
-
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const excels = await ExcelFile.find({ user_id: decoded.userId }).select(
       "id folder_id file_name created_at"
     );
-
-    console.log("ben gönderdim excelleri", excels);
 
     res.status(200).json(excels);
   } catch (error) {
