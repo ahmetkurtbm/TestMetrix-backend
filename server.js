@@ -17,7 +17,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "https://main.d15pxqgei3rwrc.amplifyapp.com", // Frontend URL
+    //origin: "https://main.d15pxqgei3rwrc.amplifyapp.com", // Frontend URL
+    origin: true,
     credentials: true,
   })
 );
@@ -70,6 +71,14 @@ const folderSchema = new mongoose.Schema({
 });
 const Folder = mongoose.model("Folder", folderSchema);
 
+app.get("/user-authentication", (req, res) => {
+  const token = req.cookies.token;
+  if (!token) {
+    return res.status(401).json({ error: "Yetkisiz erişim" });
+  }
+  res.json({ message: "Token doğrulandı", token });
+});
+
 // Register User
 app.post("/register", async (req, res) => {
   try {
@@ -96,26 +105,22 @@ app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Kullanıcıyı veritabanında bul
     const user = await User.findOne({ email });
-
-    // Kullanıcı veya şifre yanlışsa hata dön
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // JWT Token oluştur
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    // Cookie olarak token gönder
+    // Yeni cookie'yi ekle
     res.cookie("token", token, {
-      httpOnly: true, // JavaScript erişimine kapalı
-      secure: true, // HTTPS gerektirir
-      sameSite: "None", // Çapraz site isteklerine izin ver
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Sadece prod ortamında HTTPS zorunlu olsun
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
     });
 
     res.json({ message: "Login successful" });
@@ -124,16 +129,31 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// user logout
+app.post("/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+  });
+
+  res.cookie("token", "", { expires: new Date(0) }); // Boş çerez set et
+  res.json({ message: "Çıkış başarılı" });
+});
+
 // Get User
 app.get("/user", async (req, res) => {
   const token = req.cookies.token;
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.userId).select(
       "name surname email university"
     );
+
     if (!user) return res.status(404).json({ error: "User not found" });
     res.json(user);
   } catch (error) {
