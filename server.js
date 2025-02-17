@@ -91,6 +91,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
+// user Login
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -126,7 +127,7 @@ app.post("/login", async (req, res) => {
 // Get User
 app.get("/user", async (req, res) => {
   const token = req.cookies.token;
-  // if (!token) return res.status(401).json({ error: "Unauthorized" });
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   console.log(token);
 
@@ -146,7 +147,7 @@ app.get("/user", async (req, res) => {
 // Update User
 app.put("/user", async (req, res) => {
   const token = req.cookies.token;
-  // if (!token) return res.status(401).json({ error: "Unauthorized" });
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -183,7 +184,7 @@ app.delete("/user", async (req, res) => {
   const token = req.cookies.token;
   const { password } = req.body;
 
-  // if (!token) return res.status(401).json({ error: "Unauthorized" });
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
   if (!password) return res.status(400).json({ error: "Password is required" });
 
   try {
@@ -219,7 +220,7 @@ app.delete("/user", async (req, res) => {
 // Upload Excel
 app.post("/excel-upload", async (req, res) => {
   const token = req.cookies.token;
-  // if (!token) return res.status(401).json({ error: "Unauthorized" });
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -242,6 +243,8 @@ app.post("/excel-upload", async (req, res) => {
 
 // Get Single Excel File
 app.post("/excel", async (req, res) => {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const { fileId } = req.body;
     const excel = await ExcelFile.findById(fileId);
@@ -258,7 +261,7 @@ app.post("/excel", async (req, res) => {
 // Get All Excel Files
 app.get("/excels", async (req, res) => {
   const token = req.cookies.token;
-  // if (!token) return res.status(401).json({ error: "Unauthorized" });
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   console.log("ben geldim excelse");
   console.log(token);
@@ -282,6 +285,8 @@ app.get("/excels", async (req, res) => {
 
 // Delete Excel File
 app.delete("/excel-delete", async (req, res) => {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const { fileId } = req.body;
     await ExcelFile.findByIdAndDelete(fileId);
@@ -294,6 +299,8 @@ app.delete("/excel-delete", async (req, res) => {
 
 // Update Excel File
 app.put("/excel-update", async (req, res) => {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const { id, folder_id, file_name, file_data } = req.body;
     const updatedExcel = await ExcelFile.findByIdAndUpdate(
@@ -320,7 +327,7 @@ app.put("/excel-update", async (req, res) => {
 // Folder işlemleri
 app.post("/upload-folder", async (req, res) => {
   const token = req.cookies.token;
-  // if (!token) return res.status(401).json({ error: "Unauthorized" });
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -342,6 +349,8 @@ app.post("/upload-folder", async (req, res) => {
 
 // Get All Folders
 app.get("/folders", async (req, res) => {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const folders = await Folder.find();
     res.json(folders);
@@ -352,6 +361,8 @@ app.get("/folders", async (req, res) => {
 
 // Update Folder
 app.put("/update-folder", async (req, res) => {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const { id, folder_name } = req.body;
     if (!id || !folder_name)
@@ -374,6 +385,8 @@ app.put("/update-folder", async (req, res) => {
 
 // Delete Folder
 app.delete("/delete-folder", async (req, res) => {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const { id } = req.body;
     if (!id) return res.status(400).json({ message: "Folder ID is required" });
