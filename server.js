@@ -15,7 +15,12 @@ const uri =
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: true, credentials: true }));
+app.use(
+  cors({
+    origin: "https://main.d15pxqgei3rwrc.amplifyapp.com", // Frontend URL
+    credentials: true,
+  })
+);
 
 mongoose
   .connect(uri)
@@ -86,20 +91,33 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// Login User
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    // Kullanıcıyı veritabanında bul
     const user = await User.findOne({ email });
+
+    // Kullanıcı veya şifre yanlışsa hata dön
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
+
+    // JWT Token oluştur
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       JWT_SECRET,
       { expiresIn: "1h" }
     );
-    res.json({ message: "Login successful", token });
+
+    // Cookie olarak token gönder
+    res.cookie("token", token, {
+      httpOnly: true, // JavaScript erişimine kapalı
+      secure: true, // HTTPS gerektirir
+      sameSite: "None", // Çapraz site isteklerine izin ver
+    });
+
+    res.json({ message: "Login successful" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
