@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const net = require("net");
 
 const app = express();
 const port = 5000;
@@ -34,6 +35,7 @@ const userSchema = new mongoose.Schema({
   surname: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   university: { type: String },
+  phone: { type: String },
   role: { type: String, required: true }, // Yönetici, Öğretmen, Öğrenci
   KVKK: { type: Boolean, default: false },
   password: { type: String, required: true },
@@ -82,7 +84,9 @@ app.get("/user-authentication", (req, res) => {
 // Register User
 app.post("/register", async (req, res) => {
   try {
-    const { name, surname, email, university, role, KVKK, password } = req.body;
+    const { name, surname, email, university, role, phone, KVKK, password } =
+      req.body;
+    //verifyEmail(email);
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       name,
@@ -90,6 +94,7 @@ app.post("/register", async (req, res) => {
       email,
       university,
       role,
+      phone,
       KVKK,
       password: hashedPassword,
     });
@@ -103,9 +108,9 @@ app.post("/register", async (req, res) => {
 // user Login
 app.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, role, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email, role });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
@@ -169,10 +174,24 @@ app.put("/user", async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const { name, surname, university, email, currentPassword, newPassword } =
-      req.body;
+    const {
+      name,
+      surname,
+      university,
+      phone,
+      email,
+      currentPassword,
+      newPassword,
+    } = req.body;
 
-    if (!name || !surname || !university || !email || !currentPassword) {
+    if (
+      !name ||
+      !surname ||
+      !university ||
+      !phone ||
+      !email ||
+      !currentPassword
+    ) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -187,6 +206,7 @@ app.put("/user", async (req, res) => {
     user.surname = surname;
     user.university = university;
     user.email = email;
+    user.phone = phone;
     if (newPassword) user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
@@ -417,6 +437,28 @@ app.delete("/delete-folder", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// function verifyEmail(email) {
+//   const domain = email.split("@")[1];
+//   const client = net.createConnection(25, domain, () => {
+//     client.write(`HELO example.com\r\n`);
+//     client.write(`MAIL FROM:<test@example.com>\r\n`);
+//     client.write(`RCPT TO:<${email}>\r\n`);
+//     client.write("QUIT\r\n");
+//   });
+
+//   client.on("data", (data) => {
+//     console.log("SMTP Yanıtı:", data.toString());
+//   });
+
+//   client.on("error", (err) => {
+//     console.log("Hata:", err);
+//   });
+
+//   client.on("end", () => {
+//     console.log("Bağlantı kapandı.");
+//   });
+// }
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
