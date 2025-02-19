@@ -156,7 +156,7 @@ app.get("/user", async (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.userId).select(
-      "name surname email university"
+      "name surname email university phone"
     );
 
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -372,6 +372,7 @@ app.post("/upload-folder", async (req, res) => {
       user_id: decoded.userId,
       folder_name: folderName,
     });
+
     await folder.save();
 
     res.status(201).json({ id: folder._id, folderName });
@@ -385,7 +386,8 @@ app.get("/folders", async (req, res) => {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
-    const folders = await Folder.find();
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const folders = await Folder.find({ user_id: decoded.userId });
     res.json(folders);
   } catch (error) {
     res.status(500).json({ error: error.message });
