@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const nodemailer = require("nodemailer");
 //const net = require("net");
 
 const app = express();
@@ -146,6 +147,44 @@ app.post("/logout", (req, res) => {
   res.json({ message: "Çıkış başarılı" });
 });
 
+// user forgot password
+app.post("/forgot-password", async (req, res) => {
+  try {
+    const { email, generatedCode } = req.body;
+
+    // Kullanıcıyı e-posta adresine göre bul
+    const user = await User.find({ email: email });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // SMTP ayarları (Gmail veya başka bir sağlayıcı için)
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: "ahmetkurtk2@gmail.com", // Kendi e-posta adresin
+        pass: "lxuk beqx hqtl tuqj", // Gmail için uygulama şifresi gerekli olabilir
+      },
+    });
+
+    // E-posta içeriği
+    const mailOptions = {
+      from: "ahmetkurtk2@gmail.com",
+      to: email,
+      subject: "Şifre Sıfırlama Kodu",
+      text: `Şifre sıfırlama kodunuz: ${generatedCode}. Bu kod 60 saniye içinde geçerlidir.`,
+    };
+
+    // E-posta gönder
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: "Reset code sent successfully" });
+  } catch (error) {
+    console.error("Error sending email:", error.message);
+    res
+      .status(500)
+      .json({ error: "An error occurred while processing the request" });
+  }
+});
+
 // Get User
 app.get("/user", async (req, res) => {
   const token = req.cookies.token;
@@ -214,6 +253,32 @@ app.put("/user", async (req, res) => {
   } catch (error) {
     console.error("Error updating user:", error.message);
     res.status(500).json({ error: "An error occurred during user update" });
+  }
+});
+
+// Update User Password
+app.put("/user-password", async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Kullanıcıyı e-posta adresine göre bul
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Yeni şifreyi hash'le
+    user.password = await bcrypt.hash(newPassword, 10);
+
+    // Güncellenmiş kullanıcıyı kaydet
+    await user.save();
+
+    res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Error updating user:", error.message);
+    res.status(500).json({ error: "An error occurred during password update" });
   }
 });
 
