@@ -505,28 +505,6 @@ app.delete("/delete-folder", async (req, res) => {
   }
 });
 
-// function verifyEmail(email) {
-//   const domain = email.split("@")[1];
-//   const client = net.createConnection(25, domain, () => {
-//     client.write(`HELO example.com\r\n`);
-//     client.write(`MAIL FROM:<test@example.com>\r\n`);
-//     client.write(`RCPT TO:<${email}>\r\n`);
-//     client.write("QUIT\r\n");
-//   });
-
-//   client.on("data", (data) => {
-//     console.log("SMTP Yanıtı:", data.toString());
-//   });
-
-//   client.on("error", (err) => {
-//     console.log("Hata:", err);
-//   });
-
-//   client.on("end", () => {
-//     console.log("Bağlantı kapandı.");
-//   });
-// }
-
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
