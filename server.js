@@ -117,7 +117,7 @@ app.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user._id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -203,6 +203,30 @@ app.get("/user", async (req, res) => {
   } catch (error) {
     console.error("Error verifying token:", error.message);
     res.status(401).json({ error: "Invalid token" });
+  }
+});
+
+// Get All Users
+app.get("/users", async (req, res) => {
+  const token = req.cookies.token;
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    // Token'ı doğrula
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Tüm kullanıcıları çek (şifre hariç)
+    const users = await User.find({}).select(
+      "name surname email university phone role"
+    );
+
+    // Kullanıcıları frontend'e gönder
+    res.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error.message);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
