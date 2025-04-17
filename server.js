@@ -57,7 +57,11 @@ const excelFileSchema = new mongoose.Schema({
     required: true,
   },
   file_name: { type: String, required: true },
-  file_data: { type: Object, required: true },
+  file_data: {
+    type: [mongoose.Schema.Types.Mixed], // Her türlü veri tutabilir
+    default: [],
+    required: true,
+  },
   created_at: { type: Date, default: Date.now },
 });
 const ExcelFile = mongoose.model("ExcelFile", excelFileSchema);
@@ -380,15 +384,23 @@ app.post("/excel-upload", async (req, res) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     const { folder_id, file_name, file_data } = req.body;
 
-    const newExcel = new ExcelFile({
-      user_id: decoded.userId,
-      folder_id: folder_id,
-      file_name: file_name,
-      file_data: file_data,
-    });
-    await newExcel.save();
+    if (!file_data || !Array.isArray(file_data)) {
+      return res.status(400).json({ error: "Invalid file data" });
+    }
 
-    res.status(201).json({ id: newExcel._id, file_data });
+    const result = await ExcelFile.findOneAndUpdate(
+      {
+        user_id: decoded.userId,
+        folder_id: folder_id,
+        file_name: file_name,
+      },
+      {
+        $push: { file_data: { $each: file_data } },
+      },
+      { new: true, upsert: true } // yoksa oluştur
+    );
+
+    res.status(200).json({ id: result._id });
   } catch (error) {
     console.error("Error uploading Excel file:", error.message);
     res.status(500).json({ error: "An error occurred during Excel upload" });
