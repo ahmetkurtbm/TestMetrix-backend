@@ -15,7 +15,8 @@ const uri =
   "mongodb+srv://tubitak-admin:uFt7yIN9j8zaE4su@cluster0.x2r3tsi.mongodb.net/tubitak?retryWrites=true&w=majority&appName=Cluster0";
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: "16mb" })); // limiti artır
+app.use(express.urlencoded({ extended: true, limit: "16mb" }));
 app.use(cookieParser());
 app.use(
   cors({
@@ -57,11 +58,7 @@ const excelFileSchema = new mongoose.Schema({
     required: true,
   },
   file_name: { type: String, required: true },
-  file_data: {
-    type: [mongoose.Schema.Types.Mixed], // Her türlü veri tutabilir
-    default: [],
-    required: true,
-  },
+  file_data: { type: Object, required: true },
   created_at: { type: Date, default: Date.now },
 });
 const ExcelFile = mongoose.model("ExcelFile", excelFileSchema);
@@ -384,23 +381,15 @@ app.post("/excel-upload", async (req, res) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     const { folder_id, file_name, file_data } = req.body;
 
-    if (!file_data || !Array.isArray(file_data)) {
-      return res.status(400).json({ error: "Invalid file data" });
-    }
+    const newExcel = new ExcelFile({
+      user_id: decoded.userId,
+      folder_id: folder_id,
+      file_name: file_name,
+      file_data: file_data,
+    });
+    await newExcel.save();
 
-    const result = await ExcelFile.findOneAndUpdate(
-      {
-        user_id: decoded.userId,
-        folder_id: folder_id,
-        file_name: file_name,
-      },
-      {
-        $push: { file_data: { $each: file_data } },
-      },
-      { new: true, upsert: true } // yoksa oluştur
-    );
-
-    res.status(200).json({ id: result._id });
+    res.status(201).json({ id: newExcel._id, file_data });
   } catch (error) {
     console.error("Error uploading Excel file:", error.message);
     res.status(500).json({ error: "An error occurred during Excel upload" });
