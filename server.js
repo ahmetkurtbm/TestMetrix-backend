@@ -18,10 +18,21 @@ const uri =
 app.use(express.json({ limit: "16mb" })); // limiti artır
 app.use(express.urlencoded({ extended: true, limit: "16mb" }));
 app.use(cookieParser());
+const allowedOrigins = [
+  "https://testmetrix.com.tr",
+  "https://www.testmetrix.com.tr",
+  "https://d27rdrljoi20ct.cloudfront.net", // AWS Amplify CloudFront URL'in
+];
+
 app.use(
   cors({
-    //origin: "https://main.d15pxqgei3rwrc.amplifyapp.com", // Frontend URL
-    origin: true,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
@@ -210,6 +221,61 @@ app.post("/forgot-password", async (req, res) => {
     res
       .status(500)
       .json({ error: "An error occurred while processing the request" });
+  }
+});
+
+// contact send-mail
+app.post("/send-mail", async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
+
+    // Input validation
+    if (!name || !email || !subject || !message) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Configure email transporter
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: "ahmetkurtk2@gmail.com",
+        pass: "lxuk beqx hqtl tuqj",
+      },
+    });
+
+    // Email content
+    const mailOptions = {
+      from: email,
+      to: "ahmetkurtk2@gmail.com", // Where you want to receive contact form messages
+      subject: `Contact Form: ${subject}`,
+      text: `
+        Name: ${name}
+        Email: ${email}
+        Subject: ${subject}
+        
+        Message:
+        ${message}
+      `,
+      // Optional HTML version
+      html: `
+        <h3>New Contact Form Submission</h3>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <p><strong>Message:</strong></p>
+        <p>${message}</p>
+      `,
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: "Message sent successfully" });
+  } catch (error) {
+    console.error("Error sending contact form email:", error.message);
+    res
+      .status(500)
+      .json({ error: "An error occurred while sending the message" });
   }
 });
 
