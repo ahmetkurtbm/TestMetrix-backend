@@ -22,6 +22,8 @@ const allowedOrigins = [
   "https://testmetrix.com.tr",
   "https://www.testmetrix.com.tr",
   "https://d27rdrljoi20ct.cloudfront.net", // AWS Amplify CloudFront URL'in
+  "https://testmetrix.vercel.app",
+  "https://main.d15pxqgei3rwrc.amplifyapp.com/",
 ];
 
 app.use(
