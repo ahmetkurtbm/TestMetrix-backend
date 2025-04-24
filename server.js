@@ -18,26 +18,33 @@ const uri =
 app.use(express.json({ limit: "16mb" })); // limiti artır
 app.use(express.urlencoded({ extended: true, limit: "16mb" }));
 app.use(cookieParser());
-const allowedOrigins = [
-  "https://testmetrix.com.tr",
-  "https://www.testmetrix.com.tr",
-  "https://d27rdrljoi20ct.cloudfront.net", // AWS Amplify CloudFront URL'in
-  "https://testmetrix.vercel.app",
-  "https://main.d15pxqgei3rwrc.amplifyapp.com/",
-];
-
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: true,
     credentials: true,
   })
 );
+
+// const allowedOrigins = [
+//   "https://testmetrix.com.tr",
+//   "https://www.testmetrix.com.tr",
+//   "https://d27rdrljoi20ct.cloudfront.net", // AWS Amplify CloudFront URL'in
+//   "https://testmetrix.vercel.app",
+//   "https://main.d15pxqgei3rwrc.amplifyapp.com/",
+// ];
+
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       if (!origin || allowedOrigins.includes(origin)) {
+//         callback(null, true);
+//       } else {
+//         callback(new Error("Not allowed by CORS"));
+//       }
+//     },
+//     credentials: true,
+//   })
+// );
 
 mongoose
   .connect(uri)
