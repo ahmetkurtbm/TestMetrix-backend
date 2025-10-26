@@ -5,14 +5,24 @@ const bcrypt = require("bcrypt");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const nodemailer = require("nodemailer");
-//const net = require("net");
+
+try {
+  require("dotenv").config();
+} catch (e) {
+}
 
 const app = express();
 const port = 5000;
 
-const JWT_SECRET = "abcdefghjklmnprs";
-const uri =
-  "mongodb+srv://tubitak-admin:uFt7yIN9j8zaE4su@cluster0.x2r3tsi.mongodb.net/tubitak?retryWrites=true&w=majority&appName=Cluster0";
+const JWT_SECRET = process.env.JWT_SECRET;
+const uri = process.env.MONGO_URI ? String(process.env.MONGO_URI) : undefined;
+const frontendURL = process.env.FRONTEND_URL ? String(process.env.FRONTEND_URL) : undefined;
+
+if (!JWT_SECRET || !uri || !frontendURL) {
+  console.warn(
+    "Warning: Missing environment variables. Make sure you have a .env file in the project root with JWT_SECRET, MONGO_URI and FRONTEND_URL set."
+  );
+}
 
 // Middleware
 app.use(express.json({ limit: "16mb" })); // limiti artır
@@ -20,7 +30,7 @@ app.use(express.urlencoded({ extended: true, limit: "16mb" }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: true,
+    origin: frontendURL,
     credentials: true,
   })
 );
