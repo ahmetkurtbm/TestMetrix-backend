@@ -25,41 +25,35 @@ if (!JWT_SECRET || !uri || !frontendURL) {
 }
 
 // Middleware
-app.use(
-  cors({
-    origin: frontendURL,
-    credentials: true,
-  })
-);
+
 app.use(express.json({ limit: "16mb" })); // limiti artır
 app.use(express.urlencoded({ extended: true, limit: "16mb" }));
 app.use(cookieParser());
-app.options("*", cors({
-  origin: frontendURL,
-  credentials: true,
-}));
 
+const allowedOrigins = [
+  "https://testmetrix.vercel.app",  // frontend’in tam adresi (www yoksa ekleme!)
+  "http://localhost:3000"           // local test için
+];
 
-// const allowedOrigins = [
-//   "https://testmetrix.com.tr",
-//   "https://www.testmetrix.com.tr",
-//   "https://d27rdrljoi20ct.cloudfront.net", // AWS Amplify CloudFront URL'in
-//   "https://testmetrix.vercel.app",
-//   "https://main.d15pxqgei3rwrc.amplifyapp.com/",
-// ];
-
-// app.use(
-//   cors({
-//     origin: function (origin, callback) {
-//       if (!origin || allowedOrigins.includes(origin)) {
-//         callback(null, true);
-//       } else {
-//         callback(new Error("Not allowed by CORS"));
-//       }
-//     },
-//     credentials: true,
-//   })
-// );
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS"
+  );
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 mongoose
   .connect(uri)
