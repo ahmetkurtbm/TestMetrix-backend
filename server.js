@@ -27,6 +27,7 @@ if (!JWT_SECRET || !uri || !frontendURL) {
 // Middleware
 app.use(
   cors({
+    origin: frontendURL,
     credentials: true,
   })
 );
@@ -104,36 +105,38 @@ const folderSchema = new mongoose.Schema({
 const Folder = mongoose.model("Folder", folderSchema);
 
 // user authentication
-// app.get("/user-authentication", (req, res) => {
-//   const token = req.cookies.token;
+app.get("/user-authentication", (req, res) => {
+  const token = req.cookies.token;
 
-//   if (!token) {
-//     return res.status(401).json({ error: "Yetkisiz erişim" });
-//   }
+  console.log("Token 108:", token);
 
-//   try {
-//     const decoded = jwt.verify(token, JWT_SECRET);
+  if (!token) {
+    return res.status(401).json({ error: "Yetkisiz erişim" });
+  }
 
-//     res.json({ message: "Token doğrulandı", user: decoded });
-//   } catch (error) {
-//     console.error("JWT Hatası:", error);
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
 
-//     if (error.name === "TokenExpiredError") {
-//       res.clearCookie("token", {
-//         httpOnly: true,
-//         secure: true,
-//         sameSite: "None",
-//       });
+    res.json({ message: "Token doğrulandı", user: decoded });
+  } catch (error) {
+    console.error("JWT Hatası:", error);
 
-//       res.cookie("token", "", { expires: new Date(0) }); 
-//       return res
-//         .status(401)
-//         .json({ error: "Token süresi doldu, lütfen tekrar giriş yapın!" });
-//     }
+    if (error.name === "TokenExpiredError") {
+      res.clearCookie("token", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "None",
+      });
 
-//     res.status(401).json({ error: "Geçersiz token" });
-//   }
-// });
+      res.cookie("token", "", { expires: new Date(0) }); 
+      return res
+        .status(401)
+        .json({ error: "Token süresi doldu, lütfen tekrar giriş yapın!" });
+    }
+
+    res.status(401).json({ error: "Geçersiz token" });
+  }
+});
 
 // Register User
 app.post("/register", async (req, res) => {
