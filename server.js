@@ -27,7 +27,6 @@ if (!JWT_SECRET || !uri || !frontendURL) {
 // Middleware
 app.use(
   cors({
-    origin: "*",
     credentials: true,
   })
 );
