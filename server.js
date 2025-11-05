@@ -26,7 +26,9 @@ if (!JWT_SECRET || !uri || !frontendURL) {
 
 // Middleware
 app.use(
-  cors()
+  cors({
+    credentials: true,
+  })
 );
 app.use(express.json({ limit: "16mb" })); // limiti artır
 app.use(express.urlencoded({ extended: true, limit: "16mb" }));
@@ -102,36 +104,36 @@ const folderSchema = new mongoose.Schema({
 const Folder = mongoose.model("Folder", folderSchema);
 
 // user authentication
-app.get("/user-authentication", (req, res) => {
-  const token = req.cookies.token;
+// app.get("/user-authentication", (req, res) => {
+//   const token = req.cookies.token;
 
-  if (!token) {
-    return res.status(401).json({ error: "Yetkisiz erişim" });
-  }
+//   if (!token) {
+//     return res.status(401).json({ error: "Yetkisiz erişim" });
+//   }
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+//   try {
+//     const decoded = jwt.verify(token, JWT_SECRET);
 
-    res.json({ message: "Token doğrulandı", user: decoded });
-  } catch (error) {
-    console.error("JWT Hatası:", error);
+//     res.json({ message: "Token doğrulandı", user: decoded });
+//   } catch (error) {
+//     console.error("JWT Hatası:", error);
 
-    if (error.name === "TokenExpiredError") {
-      res.clearCookie("token", {
-        httpOnly: true,
-        secure: true,
-        sameSite: "None",
-      });
+//     if (error.name === "TokenExpiredError") {
+//       res.clearCookie("token", {
+//         httpOnly: true,
+//         secure: true,
+//         sameSite: "None",
+//       });
 
-      res.cookie("token", "", { expires: new Date(0) });
-      return res
-        .status(401)
-        .json({ error: "Token süresi doldu, lütfen tekrar giriş yapın!" });
-    }
+//       res.cookie("token", "", { expires: new Date(0) }); 
+//       return res
+//         .status(401)
+//         .json({ error: "Token süresi doldu, lütfen tekrar giriş yapın!" });
+//     }
 
-    res.status(401).json({ error: "Geçersiz token" });
-  }
-});
+//     res.status(401).json({ error: "Geçersiz token" });
+//   }
+// });
 
 // Register User
 app.post("/register", async (req, res) => {
@@ -175,7 +177,7 @@ app.post("/login", async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,
+      secure: true, 
       sameSite: "None",
     });
 
@@ -208,8 +210,8 @@ app.post("/forgot-password", async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "ahmetkurtk2@gmail.com",
-        pass: "lxuk beqx hqtl tuqj",
+        user: "ahmetkurtk2@gmail.com", 
+        pass: "lxuk beqx hqtl tuqj", 
       },
     });
 
