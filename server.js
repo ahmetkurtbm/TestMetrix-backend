@@ -26,9 +26,7 @@ if (!JWT_SECRET || !uri || !frontendURL) {
 
 // Middleware
 app.use(
-  cors({
-    credentials: true,
-  })
+  cors()
 );
 app.use(express.json({ limit: "16mb" })); // limiti artır
 app.use(express.urlencoded({ extended: true, limit: "16mb" }));
@@ -125,7 +123,7 @@ app.get("/user-authentication", (req, res) => {
         sameSite: "None",
       });
 
-      res.cookie("token", "", { expires: new Date(0) }); 
+      res.cookie("token", "", { expires: new Date(0) });
       return res
         .status(401)
         .json({ error: "Token süresi doldu, lütfen tekrar giriş yapın!" });
@@ -177,7 +175,7 @@ app.post("/login", async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true, 
+      secure: true,
       sameSite: "None",
     });
 
@@ -210,8 +208,8 @@ app.post("/forgot-password", async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "ahmetkurtk2@gmail.com", 
-        pass: "lxuk beqx hqtl tuqj", 
+        user: "ahmetkurtk2@gmail.com",
+        pass: "lxuk beqx hqtl tuqj",
       },
     });
 
