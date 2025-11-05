@@ -27,17 +27,13 @@ if (!JWT_SECRET || !uri || !frontendURL) {
 // Middleware
 app.use(
   cors({
-    origin: frontendURL,
+    origin: "*",
     credentials: true,
   })
 );
 app.use(express.json({ limit: "16mb" })); // limiti artır
 app.use(express.urlencoded({ extended: true, limit: "16mb" }));
 app.use(cookieParser());
-app.options("*", cors({
-  origin: frontendURL,
-  credentials: true,
-}));
 
 
 // const allowedOrigins = [
@@ -119,7 +115,6 @@ app.get("/user-authentication", (req, res) => {
   }
 
   try {
-    // Token'ı doğrula
     const decoded = jwt.verify(token, JWT_SECRET);
 
     res.json({ message: "Token doğrulandı", user: decoded });
@@ -127,20 +122,18 @@ app.get("/user-authentication", (req, res) => {
     console.error("JWT Hatası:", error);
 
     if (error.name === "TokenExpiredError") {
-      // Eğer token expired ise, çerezi temizle
       res.clearCookie("token", {
         httpOnly: true,
         secure: true,
         sameSite: "None",
       });
 
-      res.cookie("token", "", { expires: new Date(0) }); // Boş çerez set et
+      res.cookie("token", "", { expires: new Date(0) }); 
       return res
         .status(401)
         .json({ error: "Token süresi doldu, lütfen tekrar giriş yapın!" });
     }
 
-    // Diğer hatalar için
     res.status(401).json({ error: "Geçersiz token" });
   }
 });
@@ -185,10 +178,9 @@ app.post("/login", async (req, res) => {
       { expiresIn: "6h" }
     );
 
-    // Yeni cookie'yi ekle
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true, // Sadece prod ortamında HTTPS zorunlu olsun
+      secure: true, 
       sameSite: "None",
     });
 
@@ -206,7 +198,7 @@ app.post("/logout", (req, res) => {
     sameSite: "None",
   });
 
-  res.cookie("token", "", { expires: new Date(0) }); // Boş çerez set et
+  res.cookie("token", "", { expires: new Date(0) });
   res.json({ message: "Çıkış başarılı" });
 });
 
@@ -215,20 +207,17 @@ app.post("/forgot-password", async (req, res) => {
   try {
     const { email, generatedCode } = req.body;
 
-    // Kullanıcıyı e-posta adresine göre bul
     const user = await User.find({ email: email });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // SMTP ayarları (Gmail veya başka bir sağlayıcı için)
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "ahmetkurtk2@gmail.com", // Kendi e-posta adresin
-        pass: "lxuk beqx hqtl tuqj", // Gmail için uygulama şifresi gerekli olabilir
+        user: "ahmetkurtk2@gmail.com", 
+        pass: "lxuk beqx hqtl tuqj", 
       },
     });
 
-    // E-posta içeriği
     const mailOptions = {
       from: "ahmetkurtk2@gmail.com",
       to: email,
@@ -236,7 +225,6 @@ app.post("/forgot-password", async (req, res) => {
       text: `Şifre sıfırlama kodunuz: ${generatedCode}. Bu kod 60 saniye içinde geçerlidir.`,
     };
 
-    // E-posta gönder
     await transporter.sendMail(mailOptions);
 
     res.status(200).json({ message: "Reset code sent successfully" });
@@ -253,12 +241,10 @@ app.post("/send-mail", async (req, res) => {
   try {
     const { name, email, subject, message } = req.body;
 
-    // Input validation
     if (!name || !email || !subject || !message) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Configure email transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -267,10 +253,9 @@ app.post("/send-mail", async (req, res) => {
       },
     });
 
-    // Email content
     const mailOptions = {
       from: email,
-      to: "ahmetkurtk2@gmail.com", // Where you want to receive contact form messages
+      to: "ahmetkurtk2@gmail.com",
       subject: `Contact Form: ${subject}`,
       text: `
         Name: ${name}
@@ -280,7 +265,6 @@ app.post("/send-mail", async (req, res) => {
         Message:
         ${message}
       `,
-      // Optional HTML version
       html: `
         <h3>New Contact Form Submission</h3>
         <p><strong>Name:</strong> ${name}</p>
@@ -291,7 +275,6 @@ app.post("/send-mail", async (req, res) => {
       `,
     };
 
-    // Send email
     await transporter.sendMail(mailOptions);
 
     res.status(200).json({ message: "Message sent successfully" });
@@ -332,15 +315,12 @@ app.get("/users", async (req, res) => {
   }
 
   try {
-    // Token'ı doğrula
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Tüm kullanıcıları çek (şifre hariç)
     const users = await User.find({}).select(
       "name surname email university phone role"
     );
 
-    // Kullanıcıları frontend'e gönder
     res.json(users);
   } catch (error) {
     console.error("Error fetching users:", error.message);
@@ -407,14 +387,11 @@ app.put("/user-password", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Kullanıcıyı e-posta adresine göre bul
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Yeni şifreyi hash'le
     user.password = await bcrypt.hash(newPassword, 10);
 
-    // Güncellenmiş kullanıcıyı kaydet
     await user.save();
 
     res.json({ message: "Password updated successfully" });
@@ -439,7 +416,7 @@ app.delete("/user", async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    // Şifreyi kontrol et
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(403).json({ error: "Incorrect password" });
@@ -453,7 +430,6 @@ app.delete("/user", async (req, res) => {
       user_id: userId,
     });
 
-    // Kullanıcıyı sil
     await User.findByIdAndDelete(decoded.userId);
     res.json({ message: "User deleted successfully" });
   } catch (error) {
