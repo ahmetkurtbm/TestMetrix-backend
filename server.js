@@ -33,33 +33,35 @@ if (!JWT_SECRET || !uri || !frontendURL) {
 // );
 
 // ✅ CORS whitelist
-const allowedOrigins = [
-  "https://testmetrix.vercel.app",
-  "http://localhost:3000",
-];
+// const allowedOrigins = [
+//   "https://testmetrix.vercel.app",
+//   "http://localhost:3000",
+// ];
 // ✅ CORS middleware'i EN ÜSTE KOY
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-    );
-    res.setHeader(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS"
-    );
-  }
+// app.use((req, res, next) => {
+//   const origin = req.headers.origin;
+//   if (allowedOrigins.includes(origin)) {
+//     res.setHeader("Access-Control-Allow-Origin", origin);
+//     res.setHeader("Access-Control-Allow-Credentials", "true");
+//     res.setHeader(
+//       "Access-Control-Allow-Headers",
+//       "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+//     );
+//     res.setHeader(
+//       "Access-Control-Allow-Methods",
+//       "GET, POST, PUT, DELETE, OPTIONS"
+//     );
+//   }
 
-  // ✅ OPTIONS isteklerini direkt dön
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+//   // ✅ OPTIONS isteklerini direkt dön
+//   if (req.method === "OPTIONS") {
+//     return res.status(200).end();
+//   }
 
-  next();
-});
+//   next();
+// });
+app.use(cors());
+app.options("*", cors());
 app.use(express.json({ limit: "16mb" }));
 app.use(express.urlencoded({ extended: true, limit: "16mb" }));
 app.use(cookieParser());
