@@ -24,12 +24,7 @@ if (!JWT_SECRET || !uri || !frontendURL) {
   );
 }
 
-app.use(
-  cors({
-    origin: frontendURL,  
-    credentials: true,
-  })
-);
+app.use(cors());
 
 app.use(express.json({ limit: "16mb" }));
 app.use(express.urlencoded({ extended: true, limit: "16mb" }));
@@ -85,13 +80,10 @@ const folderSchema = new mongoose.Schema({
 });
 const Folder = mongoose.model("Folder", folderSchema);
 
-app.get("/test", (req, res) => {
-  res.send({message: "TÜBİTAK Backend Server is running!."});
-});
 
 // user authentication
 app.get("/user-authentication", (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
 
   console.log("Token 108:", token);
 
@@ -113,7 +105,7 @@ app.get("/user-authentication", (req, res) => {
         sameSite: "None",
       });
 
-      res.cookie("token", "", { expires: new Date(0) }); 
+      res.cookie("token", "", { expires: new Date(0) });
       return res
         .status(401)
         .json({ error: "Token süresi doldu, lütfen tekrar giriş yapın!" });
@@ -165,7 +157,7 @@ app.post("/login", async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true, 
+      secure: true,
       sameSite: "None",
     });
 
@@ -198,8 +190,8 @@ app.post("/forgot-password", async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "ahmetkurtk2@gmail.com", 
-        pass: "lxuk beqx hqtl tuqj", 
+        user: "ahmetkurtk2@gmail.com",
+        pass: "lxuk beqx hqtl tuqj",
       },
     });
 
