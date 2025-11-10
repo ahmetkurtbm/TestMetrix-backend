@@ -9,10 +9,11 @@ const nodemailer = require("nodemailer");
 try {
   require("dotenv").config();
 } catch (e) {
+  console.log("Dotenv not found, using process.env");
 }
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 5000;
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const uri = process.env.MONGO_URI ? String(process.env.MONGO_URI) : undefined;
@@ -24,36 +25,55 @@ if (!JWT_SECRET || !uri || !frontendURL) {
   );
 }
 
+// CORS Configuration - Vercel için optimize edilmiş
 const allowedOrigins = [
   "https://testmetrix.vercel.app",
   "http://localhost:3000",
   "http://localhost:3001"
 ];
 
+// CORS middleware - Vercel serverless fonksiyonları için
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
-  // Origin kontrolü - allowedOrigins içinde varsa veya development ortamında
-  if (allowedOrigins.includes(origin) || !origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin || "https://testmetrix.vercel.app");
+  console.log("Incoming origin:", origin);
+  console.log("Request method:", req.method);
+  
+  // Origin kontrolü
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else if (process.env.NODE_ENV === 'development') {
+    res.setHeader("Access-Control-Allow-Origin", origin || "*");
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "https://testmetrix.vercel.app");
   }
   
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie");
+  res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, X-CSRF-Token");
+  res.setHeader("Access-Control-Max-Age", "86400"); // 24 saat cache
   
   // Preflight OPTIONS isteklerini handle et
   if (req.method === "OPTIONS") {
-    res.status(200).end();
-    return;
+    console.log("Handling OPTIONS preflight request");
+    return res.status(200).end();
   }
   
   next();
 });
+
 app.use(express.json({ limit: "16mb" }));
 app.use(express.urlencoded({ extended: true, limit: "16mb" }));
 app.use(cookieParser());
 
+// CORS Test endpoint
+app.get("/test-cors", (req, res) => {
+  res.json({ 
+    message: "CORS is working!", 
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString()
+  });
+});
 
 mongoose
   .connect(uri)
