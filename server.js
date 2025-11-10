@@ -168,15 +168,9 @@ app.post("/login", async (req, res) => {
 });
 
 // user logout
-app.post("/logout", (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "None",
-  });
+app.get("/logout", (req, res) => {
 
-  res.cookie("token", "", { expires: new Date(0) });
-  res.json({ message: "Çıkış başarılı" });
+  res.send({ message: "Çıkış başarılı" });
 });
 
 // user forgot password
