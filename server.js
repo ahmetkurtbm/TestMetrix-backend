@@ -9,11 +9,10 @@ const nodemailer = require("nodemailer");
 try {
   require("dotenv").config();
 } catch (e) {
-  console.log("Dotenv not found, using process.env");
 }
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = 8080;
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const uri = process.env.MONGO_URI ? String(process.env.MONGO_URI) : undefined;
@@ -25,60 +24,22 @@ if (!JWT_SECRET || !uri || !frontendURL) {
   );
 }
 
-// CORS Configuration - Vercel için optimize edilmiş
-const allowedOrigins = [
-  "https://testmetrix.vercel.app",
-  "http://localhost:3000",
-  "http://localhost:3001"
-];
-
-// CORS middleware - Vercel serverless fonksiyonları için
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  
-  console.log("Incoming origin:", origin);
-  console.log("Request method:", req.method);
-  
-  // Origin kontrolü
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  } else if (process.env.NODE_ENV === 'development') {
-    res.setHeader("Access-Control-Allow-Origin", origin || "*");
-  } else {
-    res.setHeader("Access-Control-Allow-Origin", "https://testmetrix.vercel.app");
-  }
-  
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, X-CSRF-Token");
-  res.setHeader("Access-Control-Max-Age", "86400"); // 24 saat cache
-  
-  // Preflight OPTIONS isteklerini handle et
-  if (req.method === "OPTIONS") {
-    console.log("Handling OPTIONS preflight request");
-    return res.status(200).end();
-  }
-  
-  next();
-});
+app.use(
+  cors({
+    origin: frontendURL,  
+    credentials: true,
+  })
+);
 
 app.use(express.json({ limit: "16mb" }));
 app.use(express.urlencoded({ extended: true, limit: "16mb" }));
 app.use(cookieParser());
 
-// CORS Test endpoint
-app.get("/test-cors", (req, res) => {
-  res.json({ 
-    message: "CORS is working!", 
-    origin: req.headers.origin,
-    timestamp: new Date().toISOString()
-  });
-});
-
 mongoose
   .connect(uri)
   .then(() => console.log("Connected to MongoDB!"))
   .catch((err) => console.error("MongoDB connection error:", err));
+
 
 // User Schema
 const userSchema = new mongoose.Schema({
@@ -144,9 +105,11 @@ app.get("/user-authentication", (req, res) => {
     if (error.name === "TokenExpiredError") {
       res.clearCookie("token", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? "None" : "Lax",
-      }); 
+        secure: true,
+        sameSite: "None",
+      });
+
+      res.cookie("token", "", { expires: new Date(0) }); 
       return res
         .status(401)
         .json({ error: "Token süresi doldu, lütfen tekrar giriş yapın!" });
@@ -198,9 +161,8 @@ app.post("/login", async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? "None" : "Lax",
-      maxAge: 6 * 60 * 60 * 1000, // 6 saat
+      secure: true, 
+      sameSite: "None",
     });
 
     res.json({ message: "Login successful" });
@@ -213,9 +175,11 @@ app.post("/login", async (req, res) => {
 app.post("/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? "None" : "Lax",
+    secure: true,
+    sameSite: "None",
   });
+
+  res.cookie("token", "", { expires: new Date(0) });
   res.json({ message: "Çıkış başarılı" });
 });
 
@@ -640,12 +604,6 @@ app.delete("/delete-folder", async (req, res) => {
   }
 });
 
-// Local development için port dinle
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
-  });
-}
-
-// Vercel için export
-module.exports = app;
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});
