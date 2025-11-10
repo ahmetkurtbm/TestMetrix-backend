@@ -155,13 +155,13 @@ app.post("/login", async (req, res) => {
       { expiresIn: "6h" }
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "None",
-    });
+    // res.cookie("token", token, {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "None",
+    // });
 
-    res.json({ message: "Login successful" });
+    res.json({ message: "Login successful" , token: token});
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
