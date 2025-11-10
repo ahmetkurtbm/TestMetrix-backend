@@ -161,9 +161,9 @@ app.post("/login", async (req, res) => {
     //   sameSite: "None",
     // });
 
-    res.json({ message: "Login successful" , token: token});
+    res.send({ message: "Login successful" , token: token});
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.send({ error: error.message });
   }
 });
 
