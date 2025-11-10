@@ -24,51 +24,28 @@ if (!JWT_SECRET || !uri || !frontendURL) {
   );
 }
 
-// Middleware
-// app.use(
-//   cors({
-//     origin: frontendURL,
-//     credentials: true,
-//   })
-// );
+const allowedOrigins = [
+  "https://testmetrix.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:3001"
+];
 
-// ✅ CORS whitelist
-// const allowedOrigins = [
-//   "https://testmetrix.vercel.app",
-//   "http://localhost:3000",
-// ];
-// ✅ CORS middleware'i EN ÜSTE KOY
-// app.use((req, res, next) => {
-//   const origin = req.headers.origin;
-//   if (allowedOrigins.includes(origin)) {
-//     res.setHeader("Access-Control-Allow-Origin", origin);
-//     res.setHeader("Access-Control-Allow-Credentials", "true");
-//     res.setHeader(
-//       "Access-Control-Allow-Headers",
-//       "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-//     );
-//     res.setHeader(
-//       "Access-Control-Allow-Methods",
-//       "GET, POST, PUT, DELETE, OPTIONS"
-//     );
-//   }
-
-//   // ✅ OPTIONS isteklerini direkt dön
-//   if (req.method === "OPTIONS") {
-//     return res.status(200).end();
-//   }
-
-//   next();
-// });
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', frontendURL || 'https://testmetrix.vercel.app');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+  const origin = req.headers.origin;
   
-  // Preflight request için
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+  // Origin kontrolü - allowedOrigins içinde varsa veya development ortamında
+  if (allowedOrigins.includes(origin) || !origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin || "https://testmetrix.vercel.app");
+  }
+  
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie");
+  
+  // Preflight OPTIONS isteklerini handle et
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
   }
   
   next();
@@ -147,11 +124,9 @@ app.get("/user-authentication", (req, res) => {
     if (error.name === "TokenExpiredError") {
       res.clearCookie("token", {
         httpOnly: true,
-        secure: true,
-        sameSite: "None",
-      });
-
-      res.cookie("token", "", { expires: new Date(0) }); 
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? "None" : "Lax",
+      }); 
       return res
         .status(401)
         .json({ error: "Token süresi doldu, lütfen tekrar giriş yapın!" });
@@ -203,8 +178,9 @@ app.post("/login", async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true, 
-      sameSite: "None",
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? "None" : "Lax",
+      maxAge: 6 * 60 * 60 * 1000, // 6 saat
     });
 
     res.json({ message: "Login successful" });
@@ -217,11 +193,9 @@ app.post("/login", async (req, res) => {
 app.post("/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
-    secure: true,
-    sameSite: "None",
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? "None" : "Lax",
   });
-
-  res.cookie("token", "", { expires: new Date(0) });
   res.json({ message: "Çıkış başarılı" });
 });
 
@@ -646,6 +620,12 @@ app.delete("/delete-folder", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+// Local development için port dinle
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+  });
+}
+
+// Vercel için export
+module.exports = app;
