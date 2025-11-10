@@ -85,6 +85,10 @@ const folderSchema = new mongoose.Schema({
 });
 const Folder = mongoose.model("Folder", folderSchema);
 
+app.get("/test", (req, res) => {
+  res.send({message: "TÜBİTAK Backend Server is running."});
+});
+
 // user authentication
 app.get("/user-authentication", (req, res) => {
   const token = req.cookies.token;
