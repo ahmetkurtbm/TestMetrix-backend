@@ -84,7 +84,6 @@ const Folder = mongoose.model("Folder", folderSchema);
 // user authentication
 app.get("/user-authentication", (req, res) => {
   const token = req.headers.authorization;
-
   console.log("Token 108:", token);
 
   if (!token) {
@@ -169,11 +168,10 @@ app.post("/login", async (req, res) => {
 
 // user logout
 app.get("/logout", (req, res) => {
-
   res.send({ message: "Çıkış başarılı" });
 });
 
-// user forgot password
+// user forgot password -- düzenlenecek
 app.post("/forgot-password", async (req, res) => {
   try {
     const { email, generatedCode } = req.body;
@@ -207,7 +205,7 @@ app.post("/forgot-password", async (req, res) => {
   }
 });
 
-// contact send-mail
+// contact send-mail - bakılacak
 app.post("/send-mail", async (req, res) => {
   try {
     const { name, email, subject, message } = req.body;
@@ -259,7 +257,7 @@ app.post("/send-mail", async (req, res) => {
 
 // Get User
 app.get("/user", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -280,7 +278,7 @@ app.get("/user", async (req, res) => {
 
 // Get All Users
 app.get("/users", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -301,7 +299,7 @@ app.get("/users", async (req, res) => {
 
 // Update User
 app.put("/user", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
@@ -374,7 +372,7 @@ app.put("/user-password", async (req, res) => {
 
 // Delete user
 app.delete("/user", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   const { password } = req.body;
 
   if (!token) return res.status(401).json({ error: "Unauthorized" });
@@ -411,7 +409,7 @@ app.delete("/user", async (req, res) => {
 
 // Upload Excel
 app.post("/excel-upload", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
@@ -435,7 +433,7 @@ app.post("/excel-upload", async (req, res) => {
 
 // Get Single Excel File
 app.post("/excel", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const { fileId } = req.body;
@@ -452,7 +450,7 @@ app.post("/excel", async (req, res) => {
 
 // Get All Excel Files
 app.get("/excels", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
@@ -472,7 +470,7 @@ app.get("/excels", async (req, res) => {
 
 // Delete Excel File
 app.delete("/excel-delete", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const { fileId } = req.body;
@@ -486,7 +484,7 @@ app.delete("/excel-delete", async (req, res) => {
 
 // Update Excel File
 app.put("/excel-update", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const { id, folder_id, file_name, file_data } = req.body;
@@ -513,7 +511,7 @@ app.put("/excel-update", async (req, res) => {
 
 // Folder işlemleri
 app.post("/upload-folder", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
@@ -537,7 +535,7 @@ app.post("/upload-folder", async (req, res) => {
 
 // Get All Folders
 app.get("/folders", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -550,7 +548,7 @@ app.get("/folders", async (req, res) => {
 
 // Update Folder
 app.put("/update-folder", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const { id, folder_name } = req.body;
@@ -574,7 +572,7 @@ app.put("/update-folder", async (req, res) => {
 
 // Delete Folder
 app.delete("/delete-folder", async (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const { id } = req.body;
