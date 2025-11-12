@@ -81,6 +81,10 @@ const folderSchema = new mongoose.Schema({
 const Folder = mongoose.model("Folder", folderSchema);
 
 
+app.get("/", (req, res) => {
+  res.send("TÜBİTAK Backend Server is running.");
+});
+
 // user authentication
 app.get("/user-authentication", (req, res) => {
   const token = req.headers.authorization;
