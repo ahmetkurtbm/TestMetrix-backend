@@ -24,7 +24,15 @@ if (!JWT_SECRET || !uri || !frontendURL) {
   );
 }
 
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL, 
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  })
+);
+app.options("*", cors()); 
 
 app.use(express.json({ limit: "16mb" }));
 app.use(express.urlencoded({ extended: true, limit: "16mb" }));
@@ -76,6 +84,7 @@ const folderSchema = new mongoose.Schema({
     required: true,
   },
   folder_name: { type: String, required: true },
+  order: { type: Number, default: 0 },
   created_at: { type: Date, default: Date.now },
 });
 const Folder = mongoose.model("Folder", folderSchema);
@@ -88,7 +97,6 @@ app.get("/", (req, res) => {
 // user authentication
 app.get("/user-authentication", (req, res) => {
   const token = req.headers.authorization;
-  console.log("Token 108:", token);
 
   if (!token) {
     return res.status(401).json({ error: "Yetkisiz erişim" });
@@ -543,10 +551,48 @@ app.get("/folders", async (req, res) => {
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const folders = await Folder.find({ user_id: decoded.userId });
+    const folders = await Folder.find({ user_id: decoded.userId }).sort({ order: 1, created_at: 1 });
     res.json(folders);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Update Folder Order
+app.put("/update-folder-order", async (req, res) => {
+  const token = req.headers.authorization;
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { folders } = req.body;
+
+    if (!folders || !Array.isArray(folders)) {
+      return res.status(400).json({ error: "folders must be an array" });
+    }
+
+    // Expecting folders to be an array of folder ids or objects containing id/_id
+    const updates = folders.map((f, index) => {
+      let id = null;
+      if (!f) return null;
+      if (typeof f === "string") id = f;
+      else if (typeof f === "object") id = f.id || f._id || f._id?.toString() || f.id?.toString();
+
+      if (!id) return null;
+
+      return Folder.findOneAndUpdate(
+        { _id: id, user_id: decoded.userId },
+        { order: index },
+        { new: true }
+      ).exec();
+    });
+
+    const results = await Promise.all(updates.map((u) => (u ? u : Promise.resolve(null))));
+
+    res.json({ message: "Folder order updated", updated: results.filter(Boolean).length });
+  } catch (error) {
+    console.error("Error updating folder order:", error.message || error);
+    res.status(500).json({ error: "An error occurred while updating folder order" });
   }
 });
 
