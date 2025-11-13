@@ -24,15 +24,20 @@ if (!JWT_SECRET || !uri || !frontendURL) {
   );
 }
 
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL, 
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  })
-);
-app.options("*", cors()); 
+// app.use(
+//   cors({
+//     origin: process.env.FRONTEND_URL, 
+//     credentials: true,
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//   })
+// );
+// app.options("*", cors()); 
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true
+}));
 
 app.use(express.json({ limit: "16mb" }));
 app.use(express.urlencoded({ extended: true, limit: "16mb" }));
